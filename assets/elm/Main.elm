@@ -8,12 +8,13 @@ import Html.Events exposing (onClick)
 -- APP
 
 
-main : Program Never Int Msg
+main : Program Never Model Msg
 main =
-    Html.beginnerProgram
-        { model = model
-        , view = view
+    program
+        { init = init
         , update = update
+        , subscriptions = always Sub.none
+        , view = view
         }
 
 
@@ -25,9 +26,11 @@ type alias Model =
     Int
 
 
-model : number
-model =
-    0
+init : ( Model, Cmd Msg )
+init =
+    ( 0
+    , Cmd.none
+    )
 
 
 
@@ -39,14 +42,18 @@ type Msg
     | Increment
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            model
+            ( model
+            , Cmd.none
+            )
 
         Increment ->
-            model + 1
+            ( model + 1
+            , Cmd.none
+            )
 
 
 
@@ -62,9 +69,16 @@ view model =
           div [ class "row" ]
             [ div [ class "col-xs-12" ]
                 [ div [ class "jumbotron" ]
-                    [ h2 [] [ text ("Phoenix and Elm, hooray!") ]
+                    [ h2 [] [ text "Phoenix and Elm, hooray!" ]
                     , p [] [ text "find me in assets/elm/Main.elm" ]
+                    , p [] [ model |> counterText |> text ]
+                    , button [ onClick Increment ] [ text "+ 1" ]
                     ]
                 ]
             ]
         ]
+
+
+counterText : Model -> String
+counterText count =
+    "Counter: " ++ toString count

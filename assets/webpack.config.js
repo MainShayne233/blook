@@ -16,13 +16,13 @@ const prodPlugins = [
   new CopyWebpackPlugin([{from: "./assets"}]),
   new ExtractTextPlugin("css/styles.css"),
   new WriteFilePlugin(),
-]
-
-const devPlugins = [
   new CopyWebpackPlugin([{
     from: path.join(__dirname, 'static'),
     to: path.join(__dirname, '..', 'priv', 'static'),
   }]),
+]
+
+const devPlugins = [
   new webpack.optimize.OccurrenceOrderPlugin(),
   new webpack.NoEmitOnErrorsPlugin(),
   new webpack.HotModuleReplacementPlugin(),

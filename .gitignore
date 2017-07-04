@@ -16,3 +16,4 @@ erl_crash.dump
 /config/*.secret.exs
 assets/elm-stuff
 assets/node_modules
+priv/static/
