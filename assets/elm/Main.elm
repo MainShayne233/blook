@@ -3,6 +3,10 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Json.Encode
+import Phoenix.Channel
+import Phoenix.Push
+import Phoenix.Socket
 
 
 -- APP
@@ -13,7 +17,7 @@ main =
     program
         { init = init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         , view = view
         }
 
@@ -23,14 +27,39 @@ main =
 
 
 type alias Model =
-    Int
+    { phxSocket : Phoenix.Socket.Socket Msg
+    }
+
+
+initSocket : Phoenix.Socket.Socket Msg
+initSocket =
+    Phoenix.Socket.init websocketRoute
+        |> Phoenix.Socket.withDebug
+        |> Phoenix.Socket.on "new:update" lobbyName ReceieveUpdate
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( 0
-    , Cmd.none
-    )
+    let
+        channel =
+            Phoenix.Channel.init lobbyName
+                |> Phoenix.Channel.onJoin (always (PhoenixResponse lobbyName))
+                |> Phoenix.Channel.onClose (always (PhoenixResponse lobbyName))
+
+        ( phxSocket, phxCmd ) =
+            Phoenix.Socket.join channel initSocket
+    in
+    ( { phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+
+
+lobbyName : String
+lobbyName =
+    "game:lobby"
+
+
+websocketRoute : String
+websocketRoute =
+    "ws://localhost:4000/socket/websocket"
 
 
 
@@ -39,7 +68,9 @@ init =
 
 type Msg
     = NoOp
-    | Increment
+    | PhoenixMsg (Phoenix.Socket.Msg Msg)
+    | ReceieveUpdate Json.Encode.Value
+    | PhoenixResponse String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,10 +81,29 @@ update msg model =
             , Cmd.none
             )
 
-        Increment ->
-            ( model + 1
-            , Cmd.none
+        PhoenixMsg phoenixMsg ->
+            let
+                ( phxSocket, phxCmd ) =
+                    Phoenix.Socket.update phoenixMsg model.phxSocket
+            in
+            ( { model | phxSocket = phxSocket }
+            , Cmd.map PhoenixMsg phxCmd
             )
+
+        ReceieveUpdate update ->
+            ( model, Cmd.none )
+
+        PhoenixResponse response ->
+            ( model, Cmd.none )
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions { phxSocket } =
+    Phoenix.Socket.listen phxSocket PhoenixMsg
 
 
 
@@ -71,14 +121,7 @@ view model =
                 [ div [ class "jumbotron" ]
                     [ h2 [] [ text "Phoenix and Elm, hooray!" ]
                     , p [] [ text "find me in assets/elm/Main.elm" ]
-                    , p [] [ model |> counterText |> text ]
-                    , button [ onClick Increment ] [ text "+ 1" ]
                     ]
                 ]
             ]
         ]
-
-
-counterText : Model -> String
-counterText count =
-    "Counter: " ++ toString count

@@ -38,6 +38,14 @@ const publicPath = "http://localhost:4002/"
 const entry = path.join(__dirname, 'js', 'main.js')
 const hot = 'webpack-dev-server/client?http://localhost:4002'
 
+const elmLoaderOptions = {
+  pathToMake: './node_modules/.bin/elm-make',
+  cwd: prod ? 'assets' : '.',
+  verbose: !prod,
+  debug: !prod,
+  warn: !prod,
+}
+
 const config = {
   devtool: prod ? false : 'cheap-module-eval-source-map',
   entry: prod ? entry : [hot, entry],
@@ -88,8 +96,13 @@ const config = {
         test: /\.elm$/,
         exclude: [/elm-stuff/, /node_modules/],
         use: [
-          'elm-hot-loader',
-          `elm-webpack-loader?pathToMake=./node_modules/.bin/elm-make${prod ? '&cwd=assets' : ''}&verbose=true&warn=false`,
+        {
+          loader: 'elm-hot-loader',
+        },
+        {
+          loader: 'elm-webpack-loader',
+          options: elmLoaderOptions,
+        }
         ],
       },
     ],

@@ -3,7 +3,7 @@ defmodule Blook.Web.UserSocket do
 
   ## Channels
   # channel "room:*", Blook.Web.RoomChannel
-
+  channel "game:*", Blook.Web.GameChannel
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
   # transport :longpoll, Phoenix.Transports.LongPoll
