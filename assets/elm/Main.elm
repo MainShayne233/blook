@@ -1,8 +1,8 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Json.Decode
 import Json.Encode
 import Phoenix.Channel
 import Phoenix.Push
@@ -28,6 +28,18 @@ main =
 
 type alias Model =
     { phxSocket : Phoenix.Socket.Socket Msg
+    , players : List Player
+    }
+
+
+type alias Player =
+    { xCoordinate : Float
+    , yCoordinate : Float
+    }
+
+
+type alias Game =
+    { players : List Player
     }
 
 
@@ -35,7 +47,7 @@ initSocket : Phoenix.Socket.Socket Msg
 initSocket =
     Phoenix.Socket.init websocketRoute
         |> Phoenix.Socket.withDebug
-        |> Phoenix.Socket.on "new:update" lobbyName ReceieveUpdate
+        |> Phoenix.Socket.on "init:game" lobbyName InitGame
 
 
 init : ( Model, Cmd Msg )
@@ -43,13 +55,15 @@ init =
     let
         channel =
             Phoenix.Channel.init lobbyName
-                |> Phoenix.Channel.onJoin (always (PhoenixResponse lobbyName))
+                |> Phoenix.Channel.onJoin (always PhoenixJoin)
                 |> Phoenix.Channel.onClose (always (PhoenixResponse lobbyName))
 
         ( phxSocket, phxCmd ) =
             Phoenix.Socket.join channel initSocket
     in
-    ( { phxSocket = phxSocket }, Cmd.map PhoenixMsg phxCmd )
+    ( { phxSocket = phxSocket, players = [] }
+    , Cmd.map PhoenixMsg phxCmd
+    )
 
 
 lobbyName : String
@@ -69,8 +83,11 @@ websocketRoute =
 type Msg
     = NoOp
     | PhoenixMsg (Phoenix.Socket.Msg Msg)
-    | ReceieveUpdate Json.Encode.Value
+    | ReceiveUpdate Json.Encode.Value
     | PhoenixResponse String
+    | PhoenixJoin
+    | InitGame Json.Encode.Value
+    | NewKeypress String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -90,11 +107,57 @@ update msg model =
             , Cmd.map PhoenixMsg phxCmd
             )
 
-        ReceieveUpdate update ->
+        ReceiveUpdate update ->
             ( model, Cmd.none )
+
+        PhoenixJoin ->
+            let
+                push_ =
+                    Phoenix.Push.init "fetch:game" "game:lobby"
+
+                ( phxSocket, phxCmd ) =
+                    Phoenix.Socket.push push_ model.phxSocket
+            in
+            ( { model | phxSocket = phxSocket }
+            , Cmd.map PhoenixMsg phxCmd
+            )
 
         PhoenixResponse response ->
             ( model, Cmd.none )
+
+        InitGame payload ->
+            case Json.Decode.decodeValue gameDecoder payload of
+                Ok game ->
+                    ( { model | players = game.players }, Cmd.none )
+
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "InitGame error" error
+                    in
+                    ( model, Cmd.none )
+
+        NewKeypress keyPress ->
+            ( model
+            , Cmd.none
+            )
+
+
+
+-- DECODERS
+
+
+gameDecoder : Json.Decode.Decoder Game
+gameDecoder =
+    Json.Decode.map Game
+        (Json.Decode.field "players" (Json.Decode.list playerDecoder))
+
+
+playerDecoder : Json.Decode.Decoder Player
+playerDecoder =
+    Json.Decode.map2 Player
+        (Json.Decode.field "xCoordinate" Json.Decode.float)
+        (Json.Decode.field "yCoordinate" Json.Decode.float)
 
 
 
@@ -103,7 +166,13 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions { phxSocket } =
-    Phoenix.Socket.listen phxSocket PhoenixMsg
+    Sub.batch
+        [ Phoenix.Socket.listen phxSocket PhoenixMsg
+        , keyPress NewKeypress
+        ]
+
+
+port keyPress : (String -> msg) -> Sub msg
 
 
 

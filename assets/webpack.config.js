@@ -13,16 +13,19 @@ const prodPlugins = [
     __PROD: prod,
     __DEV: env === 'dev'
   }),
-  new CopyWebpackPlugin([{from: "./assets"}]),
-  new ExtractTextPlugin("css/styles.css"),
-  new WriteFilePlugin(),
   new CopyWebpackPlugin([{
     from: path.join(__dirname, 'static'),
     to: path.join(__dirname, '..', 'priv', 'static'),
   }]),
+  new ExtractTextPlugin("css/styles.css"),
+  new WriteFilePlugin(),
 ]
 
 const devPlugins = [
+  new CopyWebpackPlugin([{
+    from: path.join(__dirname, 'static'),
+    to: path.join(__dirname, '..', 'priv', 'static'),
+  }]),
   new webpack.optimize.OccurrenceOrderPlugin(),
   new webpack.NoEmitOnErrorsPlugin(),
   new webpack.HotModuleReplacementPlugin(),
@@ -52,7 +55,7 @@ const config = {
   output: {
     path: path.join(__dirname, '..', 'priv', 'static', 'js'),
     filename: 'app.bundle.js',
-    publicPath: publicPath, 
+    publicPath: publicPath,
   },
   devServer: {
     hot: true,
@@ -83,6 +86,13 @@ const config = {
   },
   module: {
     rules: [
+    {
+      test: /\.(jpg|png|svg)$/,
+      loader: 'url-loader',
+       options: {
+        limit: 25000,
+      },
+    },
       {
         test: /\.scss$/,
         use: [
@@ -92,17 +102,16 @@ const config = {
         ],
       },
       {
-
         test: /\.elm$/,
         exclude: [/elm-stuff/, /node_modules/],
         use: [
-        {
-          loader: 'elm-hot-loader',
-        },
-        {
-          loader: 'elm-webpack-loader',
-          options: elmLoaderOptions,
-        }
+          {
+            loader: 'elm-hot-loader',
+          },
+          {
+            loader: 'elm-webpack-loader',
+            options: elmLoaderOptions,
+          },
         ],
       },
     ],
