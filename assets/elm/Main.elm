@@ -47,7 +47,7 @@ initSocket : Phoenix.Socket.Socket Msg
 initSocket =
     Phoenix.Socket.init websocketRoute
         |> Phoenix.Socket.withDebug
-        |> Phoenix.Socket.on "init:game" lobbyName InitGame
+        |> Phoenix.Socket.on "update:game" lobbyName GameUpdate
 
 
 init : ( Model, Cmd Msg )
@@ -86,8 +86,8 @@ type Msg
     | ReceiveUpdate Json.Encode.Value
     | PhoenixResponse String
     | PhoenixJoin
-    | InitGame Json.Encode.Value
-    | NewKeypress String
+    | GameUpdate Json.Encode.Value
+    | NewMove String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -125,7 +125,7 @@ update msg model =
         PhoenixResponse response ->
             ( model, Cmd.none )
 
-        InitGame payload ->
+        GameUpdate payload ->
             case Json.Decode.decodeValue gameDecoder payload of
                 Ok game ->
                     ( { model | players = game.players }, Cmd.none )
@@ -133,13 +133,24 @@ update msg model =
                 Err error ->
                     let
                         _ =
-                            Debug.log "InitGame error" error
+                            Debug.log "GameUpdate error" error
                     in
                     ( model, Cmd.none )
 
-        NewKeypress keyPress ->
-            ( model
-            , Cmd.none
+        NewMove move ->
+            let
+                payload =
+                    Json.Encode.object [ ( "move", Json.Encode.string move ) ]
+
+                push =
+                    Phoenix.Push.init "new:move" "game:lobby"
+                        |> Phoenix.Push.withPayload payload
+
+                ( phxSocket, phxCmd ) =
+                    Phoenix.Socket.push push model.phxSocket
+            in
+            ( { model | phxSocket = phxSocket }
+            , Cmd.map PhoenixMsg phxCmd
             )
 
 
@@ -168,11 +179,11 @@ subscriptions : Model -> Sub Msg
 subscriptions { phxSocket } =
     Sub.batch
         [ Phoenix.Socket.listen phxSocket PhoenixMsg
-        , keyPress NewKeypress
+        , newMove NewMove
         ]
 
 
-port keyPress : (String -> msg) -> Sub msg
+port newMove : (String -> msg) -> Sub msg
 
 
 
@@ -182,15 +193,34 @@ port keyPress : (String -> msg) -> Sub msg
 
 
 view : Model -> Html Msg
-view model =
-    div [ class "container", style [ ( "margin-top", "30px" ), ( "text-align", "center" ) ] ]
-        [ -- inline CSS (literal)
-          div [ class "row" ]
-            [ div [ class "col-xs-12" ]
-                [ div [ class "jumbotron" ]
-                    [ h2 [] [ text "Phoenix and Elm, hooray!" ]
-                    , p [] [ text "find me in assets/elm/Main.elm" ]
-                    ]
-                ]
-            ]
+view { players } =
+    div []
+        [ h1 [] [ text "Blook" ]
+        , div [] (renderPlayers players)
+        ]
+
+
+renderPlayers : List Player -> List (Html Msg)
+renderPlayers players =
+    List.map renderPlayer players
+
+
+renderPlayer : Player -> Html Msg
+renderPlayer player =
+    div [ playerStyle player, class "player" ] []
+
+
+
+-- STYLE
+
+
+playerStyle : Player -> Html.Attribute msg
+playerStyle { xCoordinate, yCoordinate } =
+    style
+        [ ( "position", "absolute" )
+        , ( "height", "50px" )
+        , ( "width", "50px" )
+        , ( "backgroundColor", "black" )
+        , ( "marginLeft", ((xCoordinate * 10) |> toString) ++ "px" )
+        , ( "marginTop", ((yCoordinate * 10) |> toString) ++ "px" )
         ]

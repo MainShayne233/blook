@@ -7,8 +7,17 @@ const app = Elm.Main.embed(root)
 
 const { ports } = app
 
+const moves = {
+  KeyW: 'up',
+  KeyS: 'down',
+  KeyA: 'left',
+  KeyD: 'right',
+}
 window.addEventListener('keydown', ({code}) => {
-  ports.keyPress.send(code)
+  const move = moves[code]
+  if (move !== undefined) {
+    ports.newMove.send(move)
+  }
 })
 
 
