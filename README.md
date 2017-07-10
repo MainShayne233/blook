@@ -2,14 +2,25 @@
 
 Little blocks running around the DOM, like good friends do.
 
-Run on your computer
+![](http://i.imgur.com/CnjByiF.gif)
 
-  * Install dependencies with `mix deps.get`
-  * Start Phoenix endpoint with `mix phx.server`
+Run on your computer:
+
+[Install Elixir](https://elixir-lang.org/install.html)
+
+```bash
+# clone and enter the repo
+git clone https://www.github.com/MainShayne233/blook.git
+cd blook
+
+# install the dependencies
+mix deps.get
+
+# start the server
+mix phx.server
+```
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
-Ready to run in production? Please [check our deployment guides](http://www.phoenixframework.org/docs/deployment).
 
 ## Learn more
 
