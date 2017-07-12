@@ -15,6 +15,10 @@ cd blook
 
 # install the dependencies
 mix deps.get
+cd assets
+npm i
+elm-package install
+cd ..
 
 # start the server
 mix phx.server
