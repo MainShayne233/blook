@@ -6,7 +6,7 @@ defmodule Blook.Web.GameChannel do
 
   def join("game:lobby", _params, socket) do
     {:ok, {player_id, _player}} = Lobby.new_member(@lobby_name)
-    Lobby.update_member(@lobby_name, player_id, %{xCoordinate: 0, yCoordinate: 0})
+    Lobby.update_member(@lobby_name, player_id, %{xDisplacement: 0, yDisplacement: 0})
     socket = socket |> assign(:player_id, player_id)
     {:ok, socket}
   end

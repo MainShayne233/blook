@@ -33,8 +33,8 @@ type alias Model =
 
 
 type alias Player =
-    { xCoordinate : Float
-    , yCoordinate : Float
+    { xDisplacement : Float
+    , yDisplacement : Float
     }
 
 
@@ -167,8 +167,8 @@ gameDecoder =
 playerDecoder : Json.Decode.Decoder Player
 playerDecoder =
     Json.Decode.map2 Player
-        (Json.Decode.field "xCoordinate" Json.Decode.float)
-        (Json.Decode.field "yCoordinate" Json.Decode.float)
+        (Json.Decode.field "xDisplacement" Json.Decode.float)
+        (Json.Decode.field "yDisplacement" Json.Decode.float)
 
 
 
@@ -215,12 +215,12 @@ renderPlayer player =
 
 
 playerStyle : Player -> Html.Attribute msg
-playerStyle { xCoordinate, yCoordinate } =
+playerStyle { xDisplacement, yDisplacement } =
     style
         [ ( "position", "absolute" )
         , ( "height", "50px" )
         , ( "width", "50px" )
         , ( "backgroundColor", "black" )
-        , ( "marginLeft", ((xCoordinate * 10) |> toString) ++ "px" )
-        , ( "marginTop", ((yCoordinate * 10) |> toString) ++ "px" )
+        , ( "marginLeft", ((xDisplacement * 10) |> toString) ++ "px" )
+        , ( "marginTop", ((yDisplacement * 10) |> toString) ++ "px" )
         ]
