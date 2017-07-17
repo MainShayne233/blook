@@ -35,7 +35,15 @@ type alias Model =
 type alias Player =
     { xDisplacement : Float
     , yDisplacement : Float
+    , direction : Direction
     }
+
+
+type Direction
+    = Up
+    | Down
+    | Left
+    | Right
 
 
 type alias Game =
@@ -166,9 +174,45 @@ gameDecoder =
 
 playerDecoder : Json.Decode.Decoder Player
 playerDecoder =
-    Json.Decode.map2 Player
+    Json.Decode.map3 Player
         (Json.Decode.field "xDisplacement" Json.Decode.float)
         (Json.Decode.field "yDisplacement" Json.Decode.float)
+        (Json.Decode.field "direction" directionDecoder)
+
+
+directionDecoder : Json.Decode.Decoder Direction
+directionDecoder =
+    stringToTypeDecoder decodeDirection
+
+
+decodeDirection : String -> Direction
+decodeDirection direction =
+    case direction of
+        "up" ->
+            Up
+
+        "down" ->
+            Down
+
+        "left" ->
+            Left
+
+        "right" ->
+            Right
+
+        _ ->
+            Right
+
+
+stringToTypeDecoder : (String -> a) -> Json.Decode.Decoder a
+stringToTypeDecoder decoder =
+    Json.Decode.string
+        |> Json.Decode.andThen (doStringToTypeDecoding decoder)
+
+
+doStringToTypeDecoding : (String -> a) -> String -> Json.Decode.Decoder a
+doStringToTypeDecoding decoder string =
+    Json.Decode.succeed (decoder string)
 
 
 
@@ -207,7 +251,9 @@ renderPlayers players =
 
 renderPlayer : Player -> Html Msg
 renderPlayer player =
-    div [ playerStyle player, class "player" ] []
+    div [ playerStyle player, class "player" ]
+        [ div [ cannonStyle player, class "cannon" ] []
+        ]
 
 
 
@@ -224,3 +270,39 @@ playerStyle { xDisplacement, yDisplacement } =
         , ( "marginLeft", ((xDisplacement * 10) |> toString) ++ "px" )
         , ( "marginTop", ((yDisplacement * 10) |> toString) ++ "px" )
         ]
+
+
+cannonStyle : Player -> Html.Attribute msg
+cannonStyle { direction } =
+    let
+        baseStyle =
+            [ ( "position", "absolute" )
+            , ( "height", "10px" )
+            , ( "width", "10px" )
+            , ( "backgroundColor", "red" )
+            , ( "z-index", "-1" )
+            ]
+
+        directionStyle =
+            case direction of
+                Up ->
+                    [ ( "margin-top", "-10px" )
+                    , ( "margin-left", "20px" )
+                    ]
+
+                Right ->
+                    [ ( "margin-top", "20px" )
+                    , ( "margin-left", "50px" )
+                    ]
+
+                Down ->
+                    [ ( "margin-top", "50px" )
+                    , ( "margin-left", "20px" )
+                    ]
+
+                Left ->
+                    [ ( "margin-top", "20px" )
+                    , ( "margin-left", "-10px" )
+                    ]
+    in
+    style (baseStyle ++ directionStyle)

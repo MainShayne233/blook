@@ -8,10 +8,12 @@ const app = Elm.Main.embed(root)
 const { ports } = app
 
 const moves = {
-  KeyW: 'up',
-  KeyS: 'down',
-  KeyA: 'left',
-  KeyD: 'right',
+  KeyW: 'move_up',
+  KeyS: 'move_down',
+  KeyA: 'move_left',
+  KeyD: 'move_right',
+  KeyQ: 'rotate_counter_clockwise',
+  KeyE: 'rotate_clockwise',
 }
 window.addEventListener('keydown', ({code}) => {
   const move = moves[code]
