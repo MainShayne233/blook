@@ -14,6 +14,7 @@ const moves = {
   KeyD: 'move_right',
   KeyQ: 'rotate_counter_clockwise',
   KeyE: 'rotate_clockwise',
+  Space: 'shoot',
 }
 window.addEventListener('keydown', ({code}) => {
   const move = moves[code]

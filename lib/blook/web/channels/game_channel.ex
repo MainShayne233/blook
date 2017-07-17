@@ -20,10 +20,14 @@ defmodule Blook.Web.GameChannel do
 
   def handle_in("new:move", %{"move" => move}, socket) do
     player_id = player_id(socket)
-    {:ok, player} = Lobby.get_member(@lobby_name, player_id)
-    updated_player = Player.apply_move(player, move)
-    Lobby.update_member(@lobby_name, player_id, updated_player)
-    broadcast_game(socket)
+
+    with {:ok, player} <- Lobby.get_member(@lobby_name, player_id),
+         {:change, updated_player} <- Player.handle_move(player, move) do
+
+      Lobby.update_member(@lobby_name, player_id, updated_player)
+      broadcast_game(socket)
+    end
+
     {:noreply, socket}
   end
 

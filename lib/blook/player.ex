@@ -1,5 +1,18 @@
 defmodule Blook.Player do
 
+  @kinetic_moves [
+    "move_up",
+    "move_down",
+    "move_left",
+    "move_right",
+    "rotate_clockwise",
+    "rotate_counter_clockwise",
+  ]
+
+  @event_moves [
+    "shoot",
+  ]
+
   @directions [
     "up",
     "right",
@@ -17,13 +30,20 @@ defmodule Blook.Player do
     }
   end
 
-  def apply_move(player, move) do
-    player
-    |> Map.merge(move_update(player, move))
+
+  def handle_move(player, move) when move in @kinetic_moves do
+    player = Map.merge(player, move_update(player, move))
+    {:change, player}
   end
 
 
-  ## MOVE
+  def handle_move(player, move) when move in @event_moves do
+    handle_event(player, move)
+    {:no_change, player}
+  end
+
+
+  ## KINETIC MOVES
 
 
   defp move_update(%{yDisplacement: 0}, "move_up"), do: %{}
@@ -48,9 +68,6 @@ defmodule Blook.Player do
   end
 
 
-  ## ROTATE
-
-
   defp move_update(%{direction: direction}, "rotate_clockwise") do
     %{direction: next_direction(direction, @directions)}
   end
@@ -69,5 +86,19 @@ defmodule Blook.Player do
       |> rem(4)
 
     Enum.at(directions, index)
+  end
+
+
+  ## EVENT MOVES
+
+
+  defp handle_event(player, "shoot") do
+    %{player: player}
+    |> broadcast_event("player:shoot")
+  end
+
+
+  defp broadcast_event(payload, event_name) do
+    Blook.Web.Endpoint.broadcast!("game:channel", event_name, payload)
   end
 end
