@@ -93,12 +93,11 @@ defmodule Blook.Player do
 
 
   defp handle_event(player, "shoot") do
-    %{player: player}
-    |> broadcast_event("player:shoot")
+    broadcast_event(player, "player:shoot")
   end
 
 
   defp broadcast_event(payload, event_name) do
-    Blook.Web.Endpoint.broadcast!("game:channel", event_name, payload)
+    Blook.Web.Endpoint.broadcast!("game:lobby", event_name, payload)
   end
 end

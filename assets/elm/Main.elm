@@ -29,6 +29,7 @@ main =
 type alias Model =
     { phxSocket : Phoenix.Socket.Socket Msg
     , players : List Player
+    , shots : List Shot
     }
 
 
@@ -36,6 +37,14 @@ type alias Player =
     { xDisplacement : Float
     , yDisplacement : Float
     , direction : Direction
+    }
+
+
+type alias Shot =
+    { xDisplacement : Float
+    , yDisplacement : Float
+    , direction : Direction
+    , duration : Int
     }
 
 
@@ -56,6 +65,7 @@ initSocket =
     Phoenix.Socket.init websocketRoute
         |> Phoenix.Socket.withDebug
         |> Phoenix.Socket.on "update:game" lobbyName GameUpdate
+        |> Phoenix.Socket.on "player:shoot" lobbyName PlayerShoot
 
 
 init : ( Model, Cmd Msg )
@@ -69,7 +79,7 @@ init =
         ( phxSocket, phxCmd ) =
             Phoenix.Socket.join channel initSocket
     in
-    ( { phxSocket = phxSocket, players = [] }
+    ( { phxSocket = phxSocket, players = [], shots = [] }
     , Cmd.map PhoenixMsg phxCmd
     )
 
@@ -96,6 +106,7 @@ type Msg
     | PhoenixJoin
     | GameUpdate Json.Encode.Value
     | NewMove String
+    | PlayerShoot Json.Encode.Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -161,9 +172,42 @@ update msg model =
             , Cmd.map PhoenixMsg phxCmd
             )
 
+        PlayerShoot player ->
+            case playerShot player of
+                Ok newShot ->
+                    ( { model | shots = newShot :: model.shots }, Cmd.none )
+
+                other_ ->
+                    ( model, Cmd.none )
+
 
 
 -- DECODERS
+
+
+playerShot : Json.Decode.Value -> Result Shot Shot
+playerShot player =
+    case Json.Decode.decodeValue playerDecoder player of
+        Ok player ->
+            Ok (doPlayerShot player)
+
+        Err player_ ->
+            Err (Shot 0 0 Up 0)
+
+
+doPlayerShot : Player -> Shot
+doPlayerShot player =
+    Shot (shotXDiplacement player) (shotYDiplacement player) player.direction 500
+
+
+shotXDiplacement : Player -> Float
+shotXDiplacement { xDisplacement, direction } =
+    xDisplacement
+
+
+shotYDiplacement : Player -> Float
+shotYDiplacement { yDisplacement, direction } =
+    yDisplacement
 
 
 gameDecoder : Json.Decode.Decoder Game
